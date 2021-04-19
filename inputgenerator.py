@@ -6,7 +6,7 @@ import parse
 graph_type = 'yeetmoderandom'
 
 # Choose number of vertices (must be an int).
-size = 29
+size = 50
 
 # Choose edge weights (defaultEdgeWeight will assign same weights to every edge)
 # Setting randomWeights to True will override defaultEdgeWeight
