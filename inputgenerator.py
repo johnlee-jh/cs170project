@@ -38,7 +38,7 @@ def solidify(lines, offset=0):
 def merge(lines1, lines2):
     lines1 = solidify(lines1)
     lines2 = solidify(lines2, get_vertices(lines1))
-    return solidify(lines1 + lines2 + [(lines1[0][0], lines2[0][0], defaultEdgeWeight)])
+    return solidify(lines1 + lines2 + [(lines1[-1][0], lines2[0][0], defaultEdgeWeight)])
 
 def visualize(lines):
     # Prints out the lines to the console
@@ -50,9 +50,9 @@ def validate(path):
     parse.validate_file(path)
     parse.read_input_file(path)
 
-def save(lines, path):
+def save(lines):
     # Writes the lines to a file
-    # writer = open('samples/test_30.txt')
+    path = './samples/' + str(get_vertices(lines)) + '-' + str(len(lines)) + '-custom.in'
     writer = open(path,"w")
     writer.write(str(get_vertices(lines)) + '\n')
     last_line = lines.pop()
@@ -62,7 +62,7 @@ def save(lines, path):
     writer.close()
     validate(path)
 
-def graphgenerator(graph_type, randomWeights):
+def graphgenerator(graph_type, defaultEdgeWeight, randomWeights, size, lowerBound, upperBound):
 
     lines = []
 
@@ -169,9 +169,9 @@ def graphgenerator(graph_type, randomWeights):
     return lines
 
 
-lines1 = graphgenerator('yeetmodeuniform', False)
-lines2 = graphgenerator('yeetmoderandom', True)
+lines1 = graphgenerator('yeetmodeuniform', defaultEdgeWeight, False, size, lowerBound, upperBound)
+lines2 = graphgenerator('yeetmoderandom', defaultEdgeWeight, True, size, lowerBound, upperBound)
 lines = merge(lines1, lines2)       # Using merge causes graph to inflate by factor of 2
 solidify(lines)
 visualize(lines)
-save(lines, './samples/' + str(get_vertices(lines)) + '-' + str(len(lines)) + '-custom.in')
+save(lines)
