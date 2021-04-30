@@ -35,9 +35,9 @@ def solve(G):
     longest_path = longest_simple_paths(L, source=0, target=(V_G-1))
     L_E = len(longest_path) - 1
     L_V = len(longest_path)
-    if len(G.edges) - k <= L_E and len(G.nodes) - c <= L_V:
+    if len(G.edges) - k_val <= L_E and len(G.nodes) - c_val <= L_V:
         #k,c constraints are satisfied. Return G - L
-        pass
+        print("yeah time to implement this")
     else:
         #k,c constraints aren't satisfied. Time for Step 2
         for i in range(len(longest_path) - 1):
@@ -49,7 +49,14 @@ def solve(G):
     drawGraph(L, "L", True)
 
     """ STEP 2: Make Longest Path the Only Path """
-    
+    #Dinitz Algorithm go Brr
+
+    """ STEP 3: Convert `c` to additional `k` """
+    #Oh yeah take out them vertices
+
+    """ STEP 4: Minimize Loss """
+    #Is this L O S S ?
+
     return None
 
 def drawGraph(G, filename, detail):
