@@ -40,10 +40,17 @@ def solve(G):
 
     #Find approximated longest path in G as L.
     L_path, L_weight = semi_longest_path(G, source=s, target=t, num_sample=3000)
+    print(nx.path_weight(G, L_path, 'weight'))
+    print(nx.path_weight(G, nx.dijkstra_path(G, s, t, weight='weight'), 'weight'))
+
     # print(L_path)
     #Check whether k, c constraints are met
     L_E = len(L_path) - 1
     L_V = len(L_path)
+    print(L_E)
+    print(E_G)
+    print(V_G)
+    print(L_V)
     # print(G.edges(0 ,data=True))
     if E_G - k_val <= L_E and V_G - c_val <= L_V:
         delete_nodes = []

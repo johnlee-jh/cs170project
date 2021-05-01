@@ -15,7 +15,6 @@ def is_valid_solution(G, c, k):
     for city in c:
         assert H.has_node(city), "Invalid Solution: {} is not a valid node in graph G".format(city)
     H.remove_nodes_from(c)
-
     for road in k:
         assert H.has_edge(road[0], road[1]), "Invalid Solution: {} is not a valid edge in graph G".format(road)
     H.remove_edges_from(k)
