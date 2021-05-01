@@ -90,7 +90,7 @@ def drawGraph(G, filename, detail):
         labels = nx.get_edge_attributes(G,'weight')
         nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
         plt.savefig("visualizations/" + filename + ".jpg")
-    else:
+    else: 
         nx.draw_networkx(G)
         plt.savefig("visualizations/" + filename + ".jpg")
 
