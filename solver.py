@@ -5,10 +5,11 @@ import sys
 from os.path import basename, normpath
 import glob
 import matplotlib.pyplot as plt
+import numpy as np
 from networkx.algorithms import tree
 from networkx.algorithms.flow import dinitz
 from networkx.algorithms.flow import edmonds_karp
-
+MIN_VALUE = -10000000
 k_val = 0
 c_val = 0
 
@@ -38,44 +39,113 @@ def solve(G):
     """ STEP 1: Find Longest Path """
 
     #Find approximated longest path in G as L.
-    L = nx.Graph()
-    L_path = semi_longest_path(G, source=s, target=t, num_sample=3000)
-    print(L_path)
+    L_path, L_weight = semi_longest_path(G, source=s, target=t, num_sample=3000)
+    # print(L_path)
     #Check whether k, c constraints are met
     L_E = len(L_path) - 1
     L_V = len(L_path)
+    # print(G.edges(0 ,data=True))
     if E_G - k_val <= L_E and V_G - c_val <= L_V:
-        #k,c constraints are met. Return k, c values for G -> L
-        print("GSDGSDGS")
-        return None
-        #Return k, c values for G -> L
+        delete_nodes = []
+        delete_edges = []
+        num = 0
+        for v in G.nodes:
+            if num < c_val:
+                if v not in L_path:
+                    delete_nodes.append(v)
+                    num += 1
+        num_e = 0
+        for u,v,d in G.edges(data=True):
+            if num_e < k_val:
+                if u in L_path:
+                    index = L_path.index(u)
+                    if not (index + 1 < len(L_path) and L_path[index + 1] == v):
+                        delete_edges.append((u,v))
+                        num_e += 1
+                elif v in L_path:
+                    index = L_path.index(v)
+                    if not (index + 1 < len(L_path) and L_path[index + 1] == u):
+                        delete_edges.append((v, u))
+                        num_e += 1
+        return delete_nodes, delete_edges
 
-    #Construct L and R = G - L
-    R = G.copy()
+    R = G.copy() # R is actually now the graph of the longest path that still contains the vertices, just disconnected
+
+    edges_of_longest_path = []
+
     for i in range(len(L_path) - 1):
         u = L_path[i]
         v = L_path[i+1]
         w_uv = G[u][v]["weight"]
-        #print(u, v, w_uv)
-        L.add_edge(u, v, weight=w_uv)
-        R.remove_edge(u, v)
-    #drawGraph(L, "L", False)
-    #drawGraph(R, "R", True)
+        edges_of_longest_path.append((u, v, {'weight': w_uv}))
+        edges_of_longest_path.append((v, u, {'weight': w_uv}))
+    for u,v,d in G.edges(data=True):
+        if (u,v,d) not in edges_of_longest_path:
+            R.remove_edge(u, v)
+    new_L_path = L_path # after this it will include vertices so that it satisfies c constraint
 
-    """ STEP 2: Make Longest Path the Only Path """
-    #Dinitz Algorithm go Brr
-    #Construct R_prime, which is R but with all edge weights set as 1
-    R_prime = R.copy()
-    nx.set_edge_attributes(R_prime, values = 1, name = 'weight')
-    #drawGraph(R_prime, "R_prime", True)
-    #TODO: Find mincut value... I tried but failed - John
+    # print(R.edges)
+    # print(nx.dijkstra_path(R, s, t, weight='weight'))
+    if len(G.nodes) - len(L_path) > c_val:
+        for a in range(len(G.nodes) - len(L_path) - c_val):
+            nodes = np.setdiff1d(G.nodes, new_L_path)
+            L_max = MIN_VALUE
+            node_max = 0
+            for v in nodes:
+                edge_to_add = None
+                node_edges = G.edges(v, data=True)
+                for e in node_edges:
+                    if e[0] in new_L_path or e[1] in new_L_path: # select only one edge to connect this vertice to the graph
+                        R.add_edge(e[0], e[1], weight=e[2]['weight'])
+                        edge_to_add = e
+                        break
+                # R.add_edges_from(node_edges)
+                L_length = nx.path_weight(R, nx.dijkstra_path(R, s, t, weight='weight'), 'weight')
+                if L_length > L_max:     # add the best vertices to add to the graph based on djikstras shortest path
+                    L_max = L_length
+                    node_max = v
+                R.remove_edge(edge_to_add[0], edge_to_add[1])
+            for e in G.edges(node_max, data=True):
+                if e[0] in new_L_path or e[1] in new_L_path:
+                    R.add_edge(e[0], e[1], weight=e[2]['weight'])
+                    break
+            new_L_path.append(node_max)
 
-    """ STEP 3: Convert `c` to additional `k` """
-    #Oh yeah take out them vertices
+    edge_count = len(R.edges)
+    if len(G.edges) - edge_count > k_val: # if the vertice shifting does not fix edge count, select best edges to add to existing nodes
+        for a in range(len(G.edges) - edge_count - k_val):
+            max_edge = None
+            L_max = MIN_VALUE
+            edges_to_add = []
+            for a in new_L_path:
+                l = list(G.edges(a, data=True))
+                for u, v, d in l:
+                    if (u, v, d) not in edges_of_longest_path:
+                        edges_to_add.append((u, v, d))
+                # edges_to_add.extend(np.setdiff1d(l, ab)) # add all edges that are still stemming from the vertices in the longest path, dont include edges already in longest path
+            for e in edges_to_add:
+                R.add_edge(e[0], e[1], weight=e[2]['weight'])
+                L_length = nx.path_weight(R, nx.dijkstra_path(R, s, t, weight='weight'), 'weight')
+                if L_length > L_max:
+                    L_max = L_length
+                    max_edge = e
+                R.remove_edge(e[0], e[1])
+            R.add_edge(max_edge[0], max_edge[1], weight= max_edge[2]['weight']) # add edge that maximized djikstras to the graph R
+            edges_of_longest_path.append((max_edge[0], max_edge[1], max_edge[2]))
+            edges_of_longest_path.append((max_edge[1], max_edge[0], max_edge[2]))
 
-    """ STEP 4: Minimize Loss """
-    #Is this L O S S ?
-    return None
+
+    delete_nodes = []
+    delete_edges = []
+    for v in G.nodes:
+        if v not in new_L_path:
+                delete_nodes.append(v)
+    for e in G.edges():
+        R_edges = R.edges()
+        if e not in R_edges:
+            if e[0] not in delete_nodes and e[1] not in delete_nodes:
+                delete_edges.append((e))
+    return delete_nodes, delete_edges
 
 def drawGraph(G, filename, detail):
     """
@@ -90,7 +160,7 @@ def drawGraph(G, filename, detail):
         labels = nx.get_edge_attributes(G,'weight')
         nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
         plt.savefig("visualizations/" + filename + ".jpg")
-    else: 
+    else:
         nx.draw_networkx(G)
         plt.savefig("visualizations/" + filename + ".jpg")
 
@@ -111,8 +181,8 @@ def semi_longest_path(graph, source, target, num_sample):
             longest_path_length = path_length
             longest_path = path
         num_sample -= 1
-    print(longest_path_length)
-    return longest_path
+    # print(longest_path_length)
+    return longest_path, longest_path_length
 
 # Here's an example of how to run your solver.
 
@@ -122,12 +192,14 @@ if __name__ == '__main__':
     assert len(sys.argv) == 2
     path = sys.argv[1]
     G = read_input_file(path)
-    solve(G) #Delete this line
+    # solve(G) #Delete this line
     #Uncomment everything below this line
-    #c, k = solve(G)
-    #assert is_valid_solution(G, c, k)
-    #print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-    #write_output_file(G, c, k, 'outputs/small-1.out')
+    c, k = solve(G)
+    print(c)
+    print(k)
+    assert is_valid_solution(G, c, k)
+    print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+    write_output_file(G, c, k, 'outputs/small-1.out')
 
 
 # For testing a folder of inputs to create a folder of outputs, you can use glob (need to import it)
