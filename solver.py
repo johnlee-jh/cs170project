@@ -6,6 +6,8 @@ from os.path import basename, normpath
 import glob
 import matplotlib.pyplot as plt
 from networkx.algorithms import tree
+from networkx.algorithms.flow import dinitz
+from networkx.algorithms.flow import edmonds_karp
 
 k_val = 0
 c_val = 0
@@ -19,6 +21,7 @@ def solve(G):
         k: list of edges to remove
     """
     V_G = len(G.nodes)
+    E_G = len(G.edges)
     if (V_G >= 20 and V_G <= 30):
         k_val = 15
         c_val = 1
@@ -29,34 +32,49 @@ def solve(G):
         k_val = 100
         c_val = 5
 
+    s = 0
+    t = V_G - 1
+
     """ STEP 1: Find Longest Path """
-    #Gives an approximation of the longest path as L.
+
+    #Find approximated longest path in G as L.
     L = nx.Graph()
-    longest_path = longest_simple_paths(L, source=0, target=(V_G-1))
-    L_E = len(longest_path) - 1
-    L_V = len(longest_path)
-    if len(G.edges) - k_val <= L_E and len(G.nodes) - c_val <= L_V:
-        #k,c constraints are satisfied. Return G - L
-        print("yeah time to implement this")
-    else:
-        #k,c constraints aren't satisfied. Time for Step 2
-        for i in range(len(longest_path) - 1):
-            u = longest_path[i]
-            v = longest_path[i+1]
-            w_uv = G[u][v]["weight"]
-            #print(u, v, w_uv)
-            L.add_edge(u, v, weight=w_uv)
-    drawGraph(L, "L", True)
+    L_path = semi_longest_path(G, source=s, target=t, num_sample=3000)
+    print(L_path)
+    #Check whether k, c constraints are met
+    L_E = len(L_path) - 1
+    L_V = len(L_path)
+    if E_G - k_val <= L_E and V_G - c_val <= L_V:
+        #k,c constraints are met. Return k, c values for G -> L
+        print("GSDGSDGS")
+        return None
+        #Return k, c values for G -> L
+
+    #Construct L and R = G - L
+    R = G.copy()
+    for i in range(len(L_path) - 1):
+        u = L_path[i]
+        v = L_path[i+1]
+        w_uv = G[u][v]["weight"]
+        #print(u, v, w_uv)
+        L.add_edge(u, v, weight=w_uv)
+        R.remove_edge(u, v)
+    #drawGraph(L, "L", False)
+    #drawGraph(R, "R", True)
 
     """ STEP 2: Make Longest Path the Only Path """
     #Dinitz Algorithm go Brr
+    #Construct R_prime, which is R but with all edge weights set as 1
+    R_prime = R.copy()
+    nx.set_edge_attributes(R_prime, values = 1, name = 'weight')
+    #drawGraph(R_prime, "R_prime", True)
+    #TODO: Find mincut value... I tried but failed - John
 
     """ STEP 3: Convert `c` to additional `k` """
     #Oh yeah take out them vertices
 
     """ STEP 4: Minimize Loss """
     #Is this L O S S ?
-
     return None
 
 def drawGraph(G, filename, detail):
@@ -76,7 +94,7 @@ def drawGraph(G, filename, detail):
         nx.draw_networkx(G)
         plt.savefig("visualizations/" + filename + ".jpg")
 
-def longest_simple_paths(graph, source, target):
+def semi_longest_path(graph, source, target, num_sample):
     """
     Randomly sample simple paths from s-t and return the longest
     path out of the sample.
@@ -84,16 +102,15 @@ def longest_simple_paths(graph, source, target):
     """
     longest_path = []
     longest_path_length = 0
-    approx_limit = 5000
     simple_paths = nx.all_simple_paths(G, source=source, target=target)
     for path in nx.all_simple_paths(G, source=source, target=target):
-        if approx_limit == 0:
+        if num_sample == 0:
             break
         path_length = nx.path_weight(G, path, weight="weight")
         if path_length > longest_path_length:
             longest_path_length = path_length
             longest_path = path
-        approx_limit -= 1
+        num_sample -= 1
     print(longest_path_length)
     return longest_path
 
