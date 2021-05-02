@@ -41,7 +41,6 @@ def solve(G):
     delete_edges = []
 
     curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
-    print(curr_short_path)
     for i in range(c_val):
         least = MIN_VALUE
         delete_node = 0
@@ -62,6 +61,31 @@ def solve(G):
             delete_nodes.append(delete_node)
             H.remove_node(delete_node)
             curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
+
+    # current = nx.dijkstra_path(H, s, t, weight='weight')
+    # for i in range(k_val):
+    #     least = MIN_VALUE
+    #     delete_edge = None
+    #     edges = []
+    #     for a in range(len(current) - 1):
+    #         u = current[a]
+    #         v = current[a + 1]
+    #         weight = {'weight' : G[u][v]['weight']}
+    #         edges.append((u,v,weight))
+    #
+    #     for edge in edges:
+    #         H.remove_edge(edge[0], edge[1])
+    #         if nx.is_connected(H):
+    #             path = nx.dijkstra_path(H, s, t, weight='weight')
+    #             path_weight = nx.path_weight(H, path, weight='weight')
+    #             if path_weight > least:
+    #                 least = path_weight
+    #                 delete_edge = edge
+    #         H.add_edge(edge[0], edge[1], weight=e[2]['weight'])
+    #     if delete_edge is not None:
+    #         delete_edges.append(delete_edge)
+    #         H.remove_edge(delete_edge[0], delete_edge[1])
+    #         current = nx.dijkstra_path(H, s, t, weight='weight')
 
     A = H.copy()
     for i in range(k_val):
@@ -240,7 +264,6 @@ def semi_longest_path(graph, source, target, num_sample):
     longest_path_length = 0
     simple_paths = nx.all_simple_paths(G, source=source, target=target)
     for path in nx.all_simple_paths(G, source=source, target=target):
-        print(len(path))
         if num_sample == 0:
             break
         path_length = nx.path_weight(G, path, weight="weight")
@@ -262,8 +285,6 @@ if __name__ == '__main__':
     # solve(G) #Delete this line
     #Uncomment everything below this line
     c, k = solve(G)
-    print(c)
-    print(k)
     assert is_valid_solution(G, c, k)
     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
     write_output_file(G, c, k, 'outputs/small-1.out')
@@ -272,7 +293,9 @@ if __name__ == '__main__':
 # For testing a folder of inputs to create a folder of outputs, you can use glob (need to import it)
 # if __name__ == '__main__':
 #     inputs = glob.glob('inputs/*')
+#     print(inputs)
 #     for input_path in inputs:
+#         print(inputs)
 #         output_path = 'outputs/' + basename(normpath(input_path))[:-3] + '.out'
 #         G = read_input_file(input_path)
 #         c, k = solve(G)
