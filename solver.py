@@ -43,7 +43,7 @@ def solve(G):
     curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
     print(curr_short_path)
     for i in range(c_val):
-        least = MAX_VALUE
+        least = MIN_VALUE
         delete_node = 0
         for node in curr_short_path:
             if node != s and node != t:
@@ -52,7 +52,7 @@ def solve(G):
                 if nx.is_connected(H):
                     path = nx.dijkstra_path(H, s, t, weight='weight')
                     path_weight = nx.path_weight(H, path, weight='weight')
-                    if path_weight < least:
+                    if path_weight > least:
                         least = path_weight
                         delete_node = node
                 H.add_node(node)
@@ -76,7 +76,7 @@ def solve(G):
                 weight = {'weight' : G[u][v]['weight']}
                 edges.append((u,v,weight))
 
-            least = MAX_VALUE
+            least = MIN_VALUE
             edge_delete_one_iter = None
             for edge in edges:
                 A.remove_edge(edge[0], edge[1])
@@ -84,7 +84,7 @@ def solve(G):
                     try:
                         current = nx.dijkstra_path(A, s, t, weight='weight')
                         current_weight = nx.path_weight(A, current, weight='weight')
-                        if current_weight < least:
+                        if current_weight > least:
                             least = current_weight
                             edge_delete_one_iter = edge
                     except nx.NetworkXNoPath:
