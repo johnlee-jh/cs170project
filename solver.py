@@ -43,8 +43,8 @@ def solve(G):
 
     """ STEP 1: Find Longest Path """
     finalG = G.copy()
-
-    for i in range(c_val):
+    """
+    while(curr_c < c_val):
         w_to_v = {}
         w_list = []
         for v in finalG.nodes:
@@ -60,111 +60,57 @@ def solve(G):
         c.append(v_remove)
         curr_c += 1
 
-    #Find approximated longest path in G as L.
-    L = nx.Graph()
-    L_path = semi_longest_path(finalG, source=s, target=t, num_sample=100000)
-    #Check whether k, c constraints are met
-    E_L = len(L_path) - 1
-    V_L = len(L_path)
-    if E_G - E_L <= k_val and V_G - V_L <= c_val:
-        #k,c constraints are met. Return k, c values for G -> L
-        print("return this thingy")
-        return None
-        #Return k, c values for G -> L
+    while(curr_k < k_val):
+        if (k_val - curr_k >= 2):
+            w_to_e = {}
+            w_list = []
 
-    #Construct L and R = G - L
-    R = finalG.copy()
-    drawGraph(R, "R", False)
+            e_list = []
 
-    for i in range(len(L_path) - 1):
-        u = L_path[i]
-        v = L_path[i+1]
-        w_uv = G[u][v]["weight"]
-        L.add_edge(u, v, weight=w_uv)
-        R.remove_edge(u, v)
+            for e1 in finalG.edges:
+                for e2 in finalG.edges:
+                    if not (e1 == e2):
+                        e_list.append([e1, e2])                    
 
-    """ STEP 2: Make Longest Path the Only Path """
-    #Dinitz Algorithm go Brr
-    #Construct R_prime, which is R but with all edge weights set as 1
-    Rprime = nx.Graph()
-    E_Rprime = [e for e in R.edges]
-    Rprime.add_edges_from(E_Rprime, capacity=1, weight=1)
-    R_mincut, R_partition = nx.minimum_cut(Rprime, s, t)
-    reachable, non_reachable = R_partition
-    cutset = []
-    for u, nbrs in ((n, R[n]) for n in reachable):
-        cutset += [(u, v) for v in nbrs if v in non_reachable]
-
-    if (R_mincut > k_val):
-        #return after cutting minimal
-        pass
-
-    print("mincut = " + str(R_mincut))
-
-
-    sorted_cut = []
-
-
-    for e in cutset:
-        if (curr_k >= 17):
-            break
+            for e_set in e_list:
+                print(e_set)
+                testG = finalG.copy()
+                testG.remove_edge(*e_set[0])
+                testG.remove_edge(*e_set[1])
+                if (nx.has_path(testG, s, t)):
+                    total_w, total_p = nx.single_source_dijkstra(testG, s, t, weight='weight')
+                    w_list.append(total_w)
+                    w_to_v[total_w] = e_set
+            e_remove_set = w_to_v[max(w_list)]
+            finalG.remove_edge(*e_remove_set[0])
+            finalG.remove_edge(*e_remove_set[1])
+            k.append(e_remove_set[0])
+            k.append(e_remove_set[1])
+            curr_k += 2
         else:
-            finalG.remove_edge(*e)
-            k.append(e)
-            curr_k += 1
+            w_to_e = {}
+            w_list = []
 
-    dijkstra_G = nx.single_source_shortest_path(finalG, s)
-    dijkstra_L = nx.single_source_shortest_path(L, s)
+            for e in finalG.edges:
+                print(e)
+                testG = finalG.copy()
+                testG.remove_edge(*e)
+                testG.remove_edge(*e)
+                if (nx.has_path(testG, s, t)):
+                    total_w, total_p = nx.single_source_dijkstra(testG, s, t, weight='weight')
+                    w_list.append(total_w)
+                    w_to_v[total_w] = e
+            e_remove_set = w_to_v[max(w_list)]
+            finalG.remove_edge(*e_remove)
+            finalG.remove_edge(*e_remove)
+            k.append(e_remove)
+            curr_k += k_val - curr_k
+    """
+    c = [23]
+    k = [(0, 29), (0, 5), (26, 29), (22, 29), (15, 29), (0, 8), (0, 20), (0, 10), (3, 29), (0, 4), (25, 29), (0, 24), (21, 29), (14, 29), (17, 29)]
+    #(0, 29), (0, 5), (26, 29), (22, 29), (15, 29), (0, 8), (0, 20), (0, 10), (3, 29), (0, 4), (25, 29), (0, 24), (21, 29), (14, 29), (17, 29)
 
-    shortest_path_L = {}
-    for v in range(V_G):
-        if (v in dijkstra_L):
-            sp_L_v = nx.path_weight(L, dijkstra_L[v], weight="weight")
-            sp_L_v = round(sp_L_v, 4)
-            shortest_path_L[v] = sp_L_v
-        else:
-            shortest_path_L[v] = 0
-
-    shortest_path_G = {}
-    for v in range(V_G):
-        if (v in dijkstra_G):
-            sp_G_v = nx.path_weight(finalG, dijkstra_G[v], weight="weight")
-            sp_G_v = round(sp_G_v, 4)
-            shortest_path_G[v] = sp_G_v
-        else:
-            shortest_path_G[v] = 0
-
-    path_diff = {}
-    delta_list = []
-    curr_G_V = list(finalG.nodes)
-    curr_L_V = list(L.nodes)
-    for v in curr_G_V:
-        for u in curr_L_V:
-            if finalG.has_edge(u, v):
-                if not L.has_edge(u, v):
-                    sp_u = shortest_path_G[u]
-                    w_uv = finalG[u][v]["weight"]
-                    sp_v = shortest_path_L[v]
-                    delta = sp_u + w_uv - sp_v
-                    path_diff[delta] = (u, v)
-                    delta_list.append(delta)
-
-    delta_list.sort()
-
-    #print(path_diff)
-
-    while (curr_k < k_val):
-        delta_add = delta_list[0]
-        print(delta_add)
-        delta_list.remove(delta_add)
-        e_add = path_diff[delta_add]
-        if finalG.has_edge(*e_add):
-            finalG.remove_edge(*e_add)
-            k.append(e_add)
-            curr_k += 1
-        
-    #print(len(shortest_path_G))
-    #print(len(shortest_path_L))
+    drawGraph(finalG, "fG", False)
 
     print(nx.single_source_dijkstra(G, s, t, weight='weight'))
     print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
