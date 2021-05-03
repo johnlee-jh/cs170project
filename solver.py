@@ -62,6 +62,7 @@ def solve(G):
         curr_c += 1
     """Remove Vertices (start)"""
 
+    """Find Longest Path (start) REMOVED
     L = nx.Graph()
     L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
     
@@ -70,41 +71,68 @@ def solve(G):
         v = L_path[i+1]
         w_uv = G[u][v]["weight"]
         L.add_edge(u, v, weight=w_uv, capacity=w_uv)
+    """
+    if (k_val == 100): #Large
+        while(curr_k < k_val):
+            S = nx.Graph()
+            S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
 
-    while(curr_k < k_val):
-        print(curr_k)
+            for i in range(len(S_path) - 1):
+                u = S_path[i]
+                v = S_path[i+1]
+                w_uv = G[u][v]["weight"]
+                S.add_edge(u, v, weight=w_uv, capacity=w_uv)
 
-        S = nx.Graph()
-        S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
-
-        for i in range(len(S_path) - 1):
-            u = S_path[i]
-            v = S_path[i+1]
-            w_uv = G[u][v]["weight"]
-            S.add_edge(u, v, weight=w_uv, capacity=w_uv)
-
-        currMaxDiff = 0
-        currMaxE = list(finalG.edges)[0]
-        falseCount = 0
-        for e in S.edges:
-            tempG = finalG.copy()
-            tempG.remove_edge(*e)
-            if (nx.has_path(tempG, s, t)):
-                sp_weight, sp_path = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')
-                diff = sp_weight - finalG[e[0]][e[1]]['weight']
-                if (diff >= currMaxDiff):
-                    currMaxE = e
-            else:
-                falseCount += 1
-        if (falseCount == len(S.edges)):
-            break
-        verify = finalG.copy()
-        verify.remove_edge(*currMaxE)
-        if (nx.has_path(verify, s, t)):
+            currMaxDiff = 0
+            currMaxE = list(finalG.edges)[0]
+            falseCount = 0
+            for e in S.edges:
+                tempG = finalG.copy()
+                tempG.remove_edge(*e)
+                if (nx.has_path(tempG, s, t)):
+                    sp_weight, sp_path = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')
+                    diff = sp_weight - finalG[e[0]][e[1]]['weight']
+                    if (diff >= currMaxDiff):
+                        currMaxE = e
+                else:
+                    falseCount += 1
+            if (falseCount == len(S.edges)):
+                break
             finalG.remove_edge(*currMaxE)
             curr_k += 1
-        else:
-            break
+
+    elif (k_val == 30): #Medium
+        while(curr_k < k_val):
+            S = nx.Graph()
+            S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
+
+            for i in range(len(S_path) - 1):
+                u = S_path[i]
+                v = S_path[i+1]
+                w_uv = G[u][v]["weight"]
+                S.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
+            currMaxDiff = 0
+            currMaxE = list(finalG.edges)[0]
+            falseCount = 0
+            for e in S.edges:
+                tempG = finalG.copy()
+                tempG.remove_edge(*e)
+                if (nx.has_path(tempG, s, t)):
+                    sp_weight, sp_path = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')
+                    diff = sp_weight - finalG[e[0]][e[1]]['weight']
+                    if (diff >= currMaxDiff):
+                        currMaxE = e
+                else:
+                    falseCount += 1
+            if (falseCount == len(S.edges)):
+                break
+            finalG.remove_edge(*currMaxE)
+            curr_k += 1
+
+
+    #print(L_path)
+    #print(nx.single_source_dijkstra(finalG, s, t, weight='weight')[1])
     
     #print(nx.single_source_dijkstra(G, s, t, weight='weight'))
     #print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
@@ -113,6 +141,12 @@ def solve(G):
     k = edge_diff(G, finalG, c)
     #print(c,k)
     return c, k
+
+def findNextEdge(e, future_G, curr_G):
+    pass
+
+def heuristics(e, future_G, curr_G):
+    pass
 
 def drawGraph(G, filename, detail):
     """
@@ -177,8 +211,6 @@ if __name__ == '__main__':
     assert len(sys.argv) == 2
     path = sys.argv[1]
     G = read_input_file(path)
-    #solve(G) #Delete this line
-    #Uncomment everything below this line
     c, k = solve(G)
     assert is_valid_solution(G, c, k)
     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
