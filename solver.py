@@ -39,7 +39,9 @@ def solve(G):
     H = G.copy()
     delete_nodes = []
     delete_edges = []
-
+    a, b = semi_longest_path(G, s, t, 3000)
+    print(a)
+    print(b)
     curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
     for i in range(c_val):
         least = MIN_VALUE
@@ -278,27 +280,27 @@ def semi_longest_path(graph, source, target, num_sample):
 
 # Usage: python3 solver.py test.in
 
-if __name__ == '__main__':
-    assert len(sys.argv) == 2
-    path = sys.argv[1]
-    G = read_input_file(path)
-    # solve(G) #Delete this line
-    #Uncomment everything below this line
-    c, k = solve(G)
-    assert is_valid_solution(G, c, k)
-    print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-    write_output_file(G, c, k, 'outputs/small-1.out')
+# if __name__ == '__main__':
+#     assert len(sys.argv) == 2
+#     path = sys.argv[1]
+#     G = read_input_file(path)
+#     # solve(G) #Delete this line
+#     #Uncomment everything below this line
+#     c, k = solve(G)
+#     assert is_valid_solution(G, c, k)
+#     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+#     write_output_file(G, c, k, 'outputs/small-1.out')
 
 
 # For testing a folder of inputs to create a folder of outputs, you can use glob (need to import it)
-# if __name__ == '__main__':
-#     inputs = glob.glob('inputs/*')
-#     print(inputs)
-#     for input_path in inputs:
-#         print(inputs)
-#         output_path = 'outputs/' + basename(normpath(input_path))[:-3] + '.out'
-#         G = read_input_file(input_path)
-#         c, k = solve(G)
-#         assert is_valid_solution(G, c, k)
-#         distance = calculate_score(G, c, k)
-#         write_output_file(G, c, k, output_path)
+if __name__ == '__main__':
+    inputs = glob.glob('inputs/*')
+    print(inputs)
+    for input_path in inputs:
+        print(inputs)
+        output_path = 'outputs/' + basename(normpath(input_path))[:-3] + '.out'
+        G = read_input_file(input_path)
+        c, k = solve(G)
+        assert is_valid_solution(G, c, k)
+        distance = calculate_score(G, c, k)
+        write_output_file(G, c, k, output_path)
