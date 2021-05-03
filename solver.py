@@ -44,7 +44,7 @@ def solve(G):
     """ STEP 1: Find Longest Path """
     finalG = G.copy()
 
-    for i in range(c_val):
+    while(curr_c < c_val):
         w_to_v = {}
         w_list = []
         for v in finalG.nodes:
@@ -57,12 +57,11 @@ def solve(G):
                     w_to_v[total_w] = v
         v_remove = w_to_v[max(w_list)]
         finalG.remove_node(v_remove)
-        c.append(v_remove)
         curr_c += 1
 
     #Find approximated longest path in G as L.
     L = nx.Graph()
-    L_path = semi_longest_path(finalG, source=s, target=t, num_sample=100000)
+    L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
     #Check whether k, c constraints are met
     E_L = len(L_path) - 1
     V_L = len(L_path)
@@ -72,10 +71,8 @@ def solve(G):
         return None
         #Return k, c values for G -> L
 
-    #Construct L and R = G - L
-    R = finalG.copy()
-    drawGraph(R, "R", False)
 
+    R = finalG.copy()
     for i in range(len(L_path) - 1):
         u = L_path[i]
         v = L_path[i+1]
@@ -83,88 +80,46 @@ def solve(G):
         L.add_edge(u, v, weight=w_uv)
         R.remove_edge(u, v)
 
-    """ STEP 2: Make Longest Path the Only Path """
-    #Dinitz Algorithm go Brr
-    #Construct R_prime, which is R but with all edge weights set as 1
-    Rprime = nx.Graph()
-    E_Rprime = [e for e in R.edges]
-    Rprime.add_edges_from(E_Rprime, capacity=1, weight=1)
-    R_mincut, R_partition = nx.minimum_cut(Rprime, s, t)
-    reachable, non_reachable = R_partition
-    cutset = []
-    for u, nbrs in ((n, R[n]) for n in reachable):
-        cutset += [(u, v) for v in nbrs if v in non_reachable]
+    start_cut = s
 
-    if (R_mincut > k_val):
-        #return after cutting minimal
-        pass
+    while(curr_k < k_val):
+        Rprime = nx.Graph()
+        E_Rprime = [e for e in R.edges]
+        Rprime.add_edges_from(E_Rprime, capacity=1, weight=1)
+        R_mincut, R_partition = nx.minimum_cut(Rprime, start_cut, t)
+        reachable, non_reachable = R_partition
+        cutset = []
+        for u, nbrs in ((n, R[n]) for n in reachable):
+            cutset += [(u, v) for v in nbrs if v in non_reachable]
+        w_to_e = {}
+        w_list = []
+        for e in cutset:
+            R_temp = R.copy()
+            R_temp.remove_edge(*e)
+            new_w, w_path = nx.single_source_dijkstra(R_temp, s, t, weight='weight')
+            w_list.append(new_w)
+            w_to_e[new_w] = e
+        w_list.sort(reverse=True)
+        w_list = list(set(w_list))
 
-    print("mincut = " + str(R_mincut))
-
-
-    sorted_cut = []
-
-
-    for e in cutset:
-        if (curr_k >= 17):
-            break
-        else:
-            finalG.remove_edge(*e)
-            k.append(e)
-            curr_k += 1
-
-    dijkstra_G = nx.single_source_shortest_path(finalG, s)
-    dijkstra_L = nx.single_source_shortest_path(L, s)
-
-    shortest_path_L = {}
-    for v in range(V_G):
-        if (v in dijkstra_L):
-            sp_L_v = nx.path_weight(L, dijkstra_L[v], weight="weight")
-            sp_L_v = round(sp_L_v, 4)
-            shortest_path_L[v] = sp_L_v
-        else:
-            shortest_path_L[v] = 0
-
-    shortest_path_G = {}
-    for v in range(V_G):
-        if (v in dijkstra_G):
-            sp_G_v = nx.path_weight(finalG, dijkstra_G[v], weight="weight")
-            sp_G_v = round(sp_G_v, 4)
-            shortest_path_G[v] = sp_G_v
-        else:
-            shortest_path_G[v] = 0
-
-    path_diff = {}
-    delta_list = []
-    curr_G_V = list(finalG.nodes)
-    curr_L_V = list(L.nodes)
-    for v in curr_G_V:
-        for u in curr_L_V:
-            if finalG.has_edge(u, v):
-                if not L.has_edge(u, v):
-                    sp_u = shortest_path_G[u]
-                    w_uv = finalG[u][v]["weight"]
-                    sp_v = shortest_path_L[v]
-                    delta = sp_u + w_uv - sp_v
-                    path_diff[delta] = (u, v)
-                    delta_list.append(delta)
-
-    delta_list.sort()
-
-    #print(path_diff)
-
-    while (curr_k < k_val):
-        delta_add = delta_list[0]
-        print(delta_add)
-        delta_list.remove(delta_add)
-        e_add = path_diff[delta_add]
-        if finalG.has_edge(*e_add):
-            finalG.remove_edge(*e_add)
-            k.append(e_add)
-            curr_k += 1
+        print(w_to_e)
         
-    #print(len(shortest_path_G))
-    #print(len(shortest_path_L))
+        num_removal = len(w_list)
+        print(k_val - curr_k)
+        if (num_removal + curr_k > k_val):
+            for i in range(k_val - curr_k):
+                e_remove = w_to_e[w_list[i]]
+                print(e_remove)
+                R.remove_edge(*e_remove)
+                finalG.remove_edge(*e_remove)
+                curr_k += 1
+        else:
+            for i in range(num_removal):
+                e_remove = w_to_e[w_list[i]]
+                print(e_remove)
+                R.remove_edge(*e_remove)
+                finalG.remove_edge(*e_remove)
+                curr_k += 1
 
     print(nx.single_source_dijkstra(G, s, t, weight='weight'))
     print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
@@ -172,6 +127,8 @@ def solve(G):
     """ STEP 4: Minimize Loss """
     #Is this L O S S ?
     
+    c = vertex_diff(G, finalG)
+    k = edge_diff(G, finalG, c)
     print(c,k)
     return c, k
 
@@ -209,17 +166,15 @@ def semi_longest_path(graph, source, target, num_sample):
             longest_path_length = path_length
             longest_path = path
         num_sample -= 1
-    print(longest_path_length)
     return longest_path
 
-def edge_diff(G1, G2):
+def edge_diff(G1, G2, v_diff):
     #G1 should have more edges than G2.
     e_diff = []
     for e in G1.edges:
-        u = e[0]
-        v = e[1]
-        if not G2.has_edge(u,v):
-            e_diff.append(e)
+        if not (e[0] in v_diff) and not (e[1] in v_diff):
+            if not G2.has_edge(*e):
+                e_diff.append(e)
     return e_diff
 
 def vertex_diff(G1, G2):
@@ -227,7 +182,7 @@ def vertex_diff(G1, G2):
     v_diff = []
     for v in G1.nodes:
         if not G2.has_node(v):
-            v_diff.append(e)
+            v_diff.append(v)
     return v_diff
 
 
