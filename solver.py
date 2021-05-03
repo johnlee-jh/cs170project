@@ -22,6 +22,8 @@ def solve(G):
         c: list of cities to remove
         k: list of edges to remove
     """
+
+    """Initialize variables (start)"""
     V_G = len(G.nodes)
     E_G = len(G.edges)
     if (V_G >= 20 and V_G <= 30):
@@ -33,18 +35,17 @@ def solve(G):
     else:
         k_val = 100
         c_val = 5
-
     c = []
     k = []
-
     curr_c = 0
     curr_k = 0
-
     s = 0
     t = V_G - 1
 
     finalG = G.copy()
+    """Initialize variables (end)"""
 
+    """Remove Vertices (start)"""
     while(curr_c < c_val):
         w_to_v = {}
         w_list = []
@@ -59,8 +60,20 @@ def solve(G):
         v_remove = w_to_v[max(w_list)]
         finalG.remove_node(v_remove)
         curr_c += 1
+    """Remove Vertices (start)"""
+
+    L = nx.Graph()
+    L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
+    
+    for i in range(len(L_path) - 1):
+        u = L_path[i]
+        v = L_path[i+1]
+        w_uv = G[u][v]["weight"]
+        L.add_edge(u, v, weight=w_uv, capacity=w_uv)
 
     while(curr_k < k_val):
+        print(curr_k)
+
         S = nx.Graph()
         S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
 
@@ -69,30 +82,36 @@ def solve(G):
             v = S_path[i+1]
             w_uv = G[u][v]["weight"]
             S.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
         currMaxDiff = 0
-        currMaxE = (0, 0)
+        currMaxE = list(finalG.edges)[0]
+        falseCount = 0
         for e in S.edges:
             tempG = finalG.copy()
             tempG.remove_edge(*e)
             if (nx.has_path(tempG, s, t)):
                 sp_weight, sp_path = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')
                 diff = sp_weight - finalG[e[0]][e[1]]['weight']
-                if (diff > currMaxDiff):
+                if (diff >= currMaxDiff):
                     currMaxE = e
-        if (finalG.has_edge(*currMaxE)):
+            else:
+                falseCount += 1
+        if (falseCount == len(S.edges)):
+            break
+        verify = finalG.copy()
+        verify.remove_edge(*currMaxE)
+        if (nx.has_path(verify, s, t)):
             finalG.remove_edge(*currMaxE)
+            curr_k += 1
         else:
-            finalG.remove_edge(currMaxE[1], currMaxE[0])
-        curr_k += 1
-
-        print(curr_k)
+            break
     
-    print(nx.single_source_dijkstra(G, s, t, weight='weight'))
-    print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
+    #print(nx.single_source_dijkstra(G, s, t, weight='weight'))
+    #print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
     
     c = vertex_diff(G, finalG)
     k = edge_diff(G, finalG, c)
-    print(c,k)
+    #print(c,k)
     return c, k
 
 def drawGraph(G, filename, detail):
@@ -129,7 +148,7 @@ def semi_longest_path(graph, source, target, num_sample):
             longest_path_length = path_length
             longest_path = path
         num_sample -= 1
-    print(longest_path_length)
+    #print(longest_path_length)
     return longest_path
 
 def edge_diff(G1, G2, v_diff):
