@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from networkx.algorithms import tree
 from networkx.algorithms.flow import dinitz
 from networkx.algorithms.flow import edmonds_karp
+from networkx.algorithms.connectivity import minimum_st_edge_cut
+
 
 k_val = 0
 c_val = 0
@@ -62,70 +64,139 @@ def solve(G):
     #Find approximated longest path in G as L.
     L = nx.Graph()
     L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
+    
+    for i in range(len(L_path) - 1):
+        u = L_path[i]
+        v = L_path[i+1]
+        w_uv = G[u][v]["weight"]
+        L.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
     #Check whether k, c constraints are met
     E_L = len(L_path) - 1
     V_L = len(L_path)
     if E_G - E_L <= k_val and V_G - V_L <= c_val:
         #k,c constraints are met. Return k, c values for G -> L
-        print("return this thingy")
-        return None
+        c = vertex_diff(G, L)
+        k = edge_diff(G, L, c)
+        print(c,k)
+        return c, k
         #Return k, c values for G -> L
 
+    #Find shortest path in G as S
+    S = nx.Graph()
+    S_val, S_path = nx.single_source_dijkstra(G, s, t, weight='weight')
 
-    R = finalG.copy()
+    for i in range(len(S_path) - 1):
+        u = S_path[i]
+        v = S_path[i+1]
+        w_uv = G[u][v]["weight"]
+        S.add_edge(u, v, weight=w_uv, capacity=w_uv)
+    
+    for e in finalG.edges:
+        u = e[0]
+        v = e[1]
+        w_uv = G[u][v]["weight"]
+        finalG.remove_edge(u, v)
+        finalG.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
+
+    cutz = []
+    for i in range(len(S_path) - 1):
+        uS = S_path[i]
+        for j in range(i+1, len(S_path)):
+            vS = S_path[j]
+            if (uS in L_path and vS in L_path):
+                S_path_in_L = nx.shortest_path(L,source=uS,target=vS, weight='weight')                
+                cut_weight = nx.path_weight(L, S_path_in_L, weight="weight")
+                cut_edges = list(minimum_st_edge_cut(finalG, uS, vS))
+                for edge in cut_edges:
+                    if L.has_edge(*edge):
+                        cut_edges.remove(edge)
+                for v in S_path_in_L:
+                    for e in finalG.edges(v):
+                        print(e)
+                cutz.append((cut_weight, cut_edges))
+
+    #print(cutz)
+
+    """
+    #Find approximated longest path in G as L.
+    L = nx.Graph()
+    L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
+    
     for i in range(len(L_path) - 1):
         u = L_path[i]
         v = L_path[i+1]
         w_uv = G[u][v]["weight"]
-        L.add_edge(u, v, weight=w_uv)
-        R.remove_edge(u, v)
+        L.add_edge(u, v, weight=w_uv, capacity=w_uv)
 
-    start_cut = s
+    #Check whether k, c constraints are met
+    E_L = len(L_path) - 1
+    V_L = len(L_path)
+    if E_G - E_L <= k_val and V_G - V_L <= c_val:
+        #k,c constraints are met. Return k, c values for G -> L
+        c = vertex_diff(G, L)
+        k = edge_diff(G, L, c)
+        print(c,k)
+        return c, k
+        #Return k, c values for G -> L
 
-    while(curr_k < k_val):
-        Rprime = nx.Graph()
-        E_Rprime = [e for e in R.edges]
-        Rprime.add_edges_from(E_Rprime, capacity=1, weight=1)
-        R_mincut, R_partition = nx.minimum_cut(Rprime, start_cut, t)
-        reachable, non_reachable = R_partition
-        cutset = []
-        for u, nbrs in ((n, R[n]) for n in reachable):
-            cutset += [(u, v) for v in nbrs if v in non_reachable]
-        w_to_e = {}
-        w_list = []
-        for e in cutset:
-            R_temp = R.copy()
-            R_temp.remove_edge(*e)
-            new_w, w_path = nx.single_source_dijkstra(R_temp, s, t, weight='weight')
-            w_list.append(new_w)
-            w_to_e[new_w] = e
-        w_list.sort(reverse=True)
-        w_list = list(set(w_list))
+    #Find shortest path in G as S
+    S = nx.Graph()
+    S_val, S_path = nx.single_source_dijkstra(G, s, t, weight='weight')
 
-        print(w_to_e)
-        
-        num_removal = len(w_list)
-        print(k_val - curr_k)
-        if (num_removal + curr_k > k_val):
-            for i in range(k_val - curr_k):
-                e_remove = w_to_e[w_list[i]]
-                print(e_remove)
-                R.remove_edge(*e_remove)
-                finalG.remove_edge(*e_remove)
-                curr_k += 1
-        else:
-            for i in range(num_removal):
-                e_remove = w_to_e[w_list[i]]
-                print(e_remove)
-                R.remove_edge(*e_remove)
-                finalG.remove_edge(*e_remove)
-                curr_k += 1
+    for i in range(len(S_path) - 1):
+        u = S_path[i]
+        v = S_path[i+1]
+        w_uv = G[u][v]["weight"]
+        S.add_edge(u, v, weight=w_uv, capacity=w_uv)
+    
+    L_cuts = {}
 
+    for e in finalG.edges:
+        u = e[0]
+        v = e[1]
+        w_uv = G[u][v]["weight"]
+        finalG.remove_edge(u, v)
+        finalG.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
+    print(L_path)
+    print(S_path)
+
+    try_cutting = {} #key = cut_weight, value = path
+    cut_weights = []
+    for i in range(len(S_path) - 1):
+        uS = S_path[i]
+        for j in range(i+1, len(S_path)):
+            vS = S_path[j]
+            L_path_in_S = []
+            if (uS in L_path and vS in L_path):
+                S_path_in_L = nx.shortest_path(L,source=uS,target=vS, weight='weight')
+                cut_weight = nx.path_weight(L, S_path_in_L, weight="weight")
+                cut_weights.append(cut_weight)
+                try_cutting[cut_weight] = (uS, vS)
+    
+    cut_weights.sort(reverse=True)
+    print(cut_weights)
+    print(try_cutting)
+
+    for i in range(len(cut_weights)):
+        cut_weight = cut_weights[i]
+        e = try_cutting[cut_weight]
+        u = e[0]
+        v = e[1]
+        cut = list(minimum_st_edge_cut(finalG, u, v))
+        for edge in cut:
+            if L.has_edge(*edge):
+                cut.remove(edge)
+        if (len(cut) <= k_val):
+            for edge2 in cut:
+                if (finalG.has_edge(*edge2)):
+                    finalG.remove_edge(*edge2)
+    """
+    
     print(nx.single_source_dijkstra(G, s, t, weight='weight'))
     print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
-
-    """ STEP 4: Minimize Loss """
-    #Is this L O S S ?
     
     c = vertex_diff(G, finalG)
     k = edge_diff(G, finalG, c)
@@ -166,6 +237,7 @@ def semi_longest_path(graph, source, target, num_sample):
             longest_path_length = path_length
             longest_path = path
         num_sample -= 1
+    print(longest_path_length)
     return longest_path
 
 def edge_diff(G1, G2, v_diff):
