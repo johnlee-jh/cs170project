@@ -26,7 +26,6 @@ def solve(G):
         k: list of edges to remove
     """
     V_G = len(G.nodes)
-    E_G = len(G.edges)
     if (V_G >= 20 and V_G <= 30):
         k_val = 15
         c_val = 1
@@ -42,10 +41,10 @@ def solve(G):
     H = G.copy()
     delete_nodes = []
     delete_edges = []
-    curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
     for i in range(c_val):
         least = MIN_VALUE
         delete_node = 0
+        curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
         for node in curr_short_path:
             if node != s and node != t:
                 edges = list(H.edges(node, data=True))
@@ -62,13 +61,11 @@ def solve(G):
         if delete_node != s and delete_node != t:
             delete_nodes.append(delete_node)
             H.remove_node(delete_node)
-            curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
 
-    A = H.copy()
     for i in range(k_val):
-        current = nx.dijkstra_path(A, s, t, weight='weight')
         A = H.copy()
-        for j in range(0, i + 1):
+        for j in range(i + 1):
+            current = nx.dijkstra_path(A, s, t, weight='weight')
             edges = []
             for a in range(len(current) - 1):
                 u = current[a]
@@ -92,7 +89,6 @@ def solve(G):
                 A.add_edge(edge[0], edge[1], weight=edge[2]['weight'])
             if edge_delete_one_iter != None:
                 A.remove_edge(edge_delete_one_iter[0], edge_delete_one_iter[1])
-                current = nx.dijkstra_path(A, s, t, weight='weight')
                 if i == k_val - 1:
                     delete_edges.append((edge_delete_one_iter[0], edge_delete_one_iter[1]))
 
