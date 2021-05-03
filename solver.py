@@ -73,7 +73,38 @@ def solve(G):
         w_uv = G[u][v]["weight"]
         L.add_edge(u, v, weight=w_uv, capacity=w_uv)
     """
-    if (False): #Large
+    if (True): #Large
+        while(curr_k < k_val):
+            S = nx.Graph()
+            S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
+
+            for i in range(len(S_path) - 1):
+                u = S_path[i]
+                v = S_path[i+1]
+                w_uv = G[u][v]["weight"]
+                S.add_edge(u, v, weight=w_uv, capacity=w_uv)
+
+            currMaxDiff = 0
+            currMaxE = list(finalG.edges)[0]
+            falseCount = 0
+            for e in S.edges:
+                tempG = finalG.copy()
+                tempG.remove_edge(*e)
+                if (nx.has_path(tempG, s, t)):
+                    sp_weight = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')[0]
+                    diff = sp_weight - finalG[e[0]][e[1]]['weight']
+                    if (diff >= currMaxDiff):
+                        currMaxE = e
+                else:
+                    falseCount += 1
+            #print(falseCount)
+            if (falseCount == len(S.edges)):
+                break
+            #print(curr_k)
+            finalG.remove_edge(*currMaxE)
+            curr_k += 1
+    else: #Medium
+        """
         while(curr_k < k_val):
             S = nx.Graph()
             S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
@@ -100,61 +131,16 @@ def solve(G):
             if (falseCount == len(S.edges)):
                 break
             finalG.remove_edge(*currMaxE)
-            curr_k += 1
-    else: #Medium
-        while(curr_k < k_val):
-            S = nx.Graph()
-            S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
-
-            for i in range(len(S_path) - 1):
-                u = S_path[i]
-                v = S_path[i+1]
-                w_uv = G[u][v]["weight"]
-                S.add_edge(u, v, weight=w_uv, capacity=w_uv)
-
-            hn = 2
-
-            currMaxDiff = 0
-            currMaxE = list(finalG.edges)[0:hn]
-            #print(currMaxE)
-            e_sets = []
-            
-            #print(len(S.edges))
-            if (len(S.edges) < hn):
-                n_set = []
-                for e in S.edges:
-                    n_set.append(e)
-                e_sets.append(n_set)
-            else:
-                for i in range(0, len(S.edges) - hn + 1):
-                    n_set = list(S.edges)[i:i+hn]
-                    #print(n_set)
-                    e_sets.append(n_set)
-
-            print(e_sets)
-
-            """
-            for e_set in e_sets:
-                tempG = finalG.copy()
-                tempG.remove_edge(*e)
-                if (nx.has_path(tempG, s, t)):
-                    sp_weight = nx.single_source_dijkstra(tempG, e[0], e[1], weight='weight')[0]
-                    diff = sp_weight - finalG[e[0]][e[1]]['weight']
-                    if (diff >= currMaxDiff):
-                        currMaxE = e
-            """
-            #finalG.remove_edge(*currMaxE)
-            curr_k += 1
-        """
-        print("gsd")
+        """        
+        #print("gsd")
         while (curr_k < k_val):
             if (True):
-                print("yeet1")
-                toRemove = findEdge(finalG, finalG, 3, True, s, t, [])
-                print(toRemove)
+                #print("yeet1")
+                toRemove = findEdge(finalG, finalG, 1, True, s, t, [])
+                #print(toRemove)
                 finalG.remove_edge(*toRemove)
                 curr_k += 1
-        """
+        
 
     #print(L_path)
     #print(nx.single_source_dijkstra(finalG, s, t, weight='weight')[0])
@@ -185,9 +171,11 @@ def findEdge(originalG, currG, depth, saveEdge, s, t, e_list):
 
     if (depth == 0):
         sp_weight = 0
-        for e in e_list:
-            sp_weight += nx.single_source_dijkstra(currG, e[0], e[1], weight='weight')[0]
-            sp_weight -= originalG[e[0]][e[1]]['weight']
+        for i in range(len(e_list)):
+            e = e_list[i]
+            if (i == 0):
+                sp_weight += nx.single_source_dijkstra(currG, e[0], e[1], weight='weight')[0]
+                sp_weight -= originalG[e[0]][e[1]]['weight']
         return sp_weight
 
     currScore = 0
@@ -205,6 +193,7 @@ def findEdge(originalG, currG, depth, saveEdge, s, t, e_list):
             if (score > currScore):
                 currScore = score
                 optimalEdge = e
+
     if saveEdge:
         return optimalEdge
     else:
@@ -285,6 +274,7 @@ def vertex_diff(G1, G2):
 
 # Usage: python3 solver.py test.in
 
+"""
 if __name__ == '__main__':
     assert len(sys.argv) == 2
     path = sys.argv[1]
@@ -293,15 +283,20 @@ if __name__ == '__main__':
     assert is_valid_solution(G, c, k)
     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
     #write_output_file(G, c, k, 'outputs/small-1.out')
-
+"""
 
 # For testing a folder of inputs to create a folder of outputs, you can use glob (need to import it)
-# if __name__ == '__main__':
-#     inputs = glob.glob('inputs/*')
-#     for input_path in inputs:
-#         output_path = 'outputs/' + basename(normpath(input_path))[:-3] + '.out'
-#         G = read_input_file(input_path)
-#         c, k = solve(G)
-#         assert is_valid_solution(G, c, k)
-#         distance = calculate_score(G, c, k)
-#         write_output_file(G, c, k, output_path)
+if __name__ == '__main__':
+    #inputs = []
+    failed_large = [16,51,74,93,100,123,131,177,189,215,252,254]
+    failed_medium = [31,46,51,123,186]
+    for i in range(300, 301): #max(failed_medium)+1
+        if (not (i in failed_medium)):
+            print(i)
+            input_path = "inputs/large/large-" + str(i) + ".in"    
+            output_path = 'outputs/large/large-' + str(i) + '.out'
+            G = read_input_file(input_path)
+            c, k = solve(G)
+            assert is_valid_solution(G, c, k)
+            distance = calculate_score(G, c, k)
+            write_output_file(G, c, k, output_path)
