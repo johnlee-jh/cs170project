@@ -44,8 +44,7 @@ def solve(G):
     for i in range(c_val):
         least = MIN_VALUE
         delete_node = 0
-        curr_short_path = nx.dijkstra_path(H, s, t, weight='weight')
-        for node in curr_short_path:
+        for node in H:
             if node != s and node != t:
                 edges = list(H.edges(node, data=True))
                 H.remove_node(node)
@@ -62,36 +61,30 @@ def solve(G):
             delete_nodes.append(delete_node)
             H.remove_node(delete_node)
 
+    A = H.copy()
     for i in range(k_val):
-        A = H.copy()
-        for j in range(i + 1):
-            current = nx.dijkstra_path(A, s, t, weight='weight')
-            edges = []
-            for a in range(len(current) - 1):
-                u = current[a]
-                v = current[a + 1]
-                weight = {'weight' : G[u][v]['weight']}
-                edges.append((u,v,weight))
 
-            least = MIN_VALUE
-            edge_delete_one_iter = None
-            for edge in edges:
-                A.remove_edge(edge[0], edge[1])
-                if nx.is_connected(H):
-                    try:
-                        current = nx.dijkstra_path(A, s, t, weight='weight')
-                        current_weight = nx.path_weight(A, current, weight='weight')
-                        if current_weight > least:
-                            least = current_weight
-                            edge_delete_one_iter = edge
-                    except nx.NetworkXNoPath:
-                        pass
-                A.add_edge(edge[0], edge[1], weight=edge[2]['weight'])
-            if edge_delete_one_iter != None:
-                A.remove_edge(edge_delete_one_iter[0], edge_delete_one_iter[1])
-                if i == k_val - 1:
-                    delete_edges.append((edge_delete_one_iter[0], edge_delete_one_iter[1]))
+        least = MIN_VALUE
+        edge_delete_one_iter = None
+        edges = list(A.edges(data=True))
+        for edge in edges:
+            A.remove_edge(edge[0], edge[1])
+            if nx.is_connected(H):
+                try:
+                    current = nx.dijkstra_path(A, s, t, weight='weight')
+                    current_weight = nx.path_weight(A, current, weight='weight')
+                    if current_weight > least:
+                        least = current_weight
+                        edge_delete_one_iter = edge
+                except nx.NetworkXNoPath:
+                    pass
+            A.add_edge(edge[0], edge[1], weight=edge[2]['weight'])
 
+        if edge_delete_one_iter != None:
+            A.remove_edge(edge_delete_one_iter[0], edge_delete_one_iter[1])
+            delete_edges.append((edge_delete_one_iter[0], edge_delete_one_iter[1]))
+    print(delete_nodes)
+    print(delete_edges)
     return delete_nodes, delete_edges
 
 
