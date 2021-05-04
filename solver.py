@@ -10,10 +10,13 @@ from networkx.algorithms import tree
 from networkx.algorithms.flow import dinitz
 from networkx.algorithms.flow import edmonds_karp
 from networkx.algorithms.connectivity import minimum_st_edge_cut
+import multiprocessing
+
 MIN_VALUE = -10000000
 MAX_VALUE = 10000000
 k_val = 0
 c_val = 0
+
 
 def solve(G):
     """
@@ -26,32 +29,47 @@ def solve(G):
     V_G = len(G.nodes)
 
     if (V_G >= 20 and V_G <= 30):
-        c1, k1 = naive1(G) #small algorithm 1
-        c2, k2 = naive2(G) #small algorithm 2
+        c1, k1 = naive1(G)  # small algorithm 1
+        c2, k2 = naive2(G)  # small algorithm 2
         if calculate_score(G, c1, k1) > calculate_score(G, c2, k2):
             return c1, k1
         else:
             return c2, k2
     elif (V_G > 30 and V_G <= 50):
-        c3, k3 = randomized_helper(G, 150) #medium and large algorithm
+        c3, k3 = [], []
+        # c3, k3 = randomized_helper(G, 50)  # medium and large algorithm
         c4, k4 = large_and_medium(G)
         if calculate_score(G, c3, k3) > calculate_score(G, c4, k4):
             return c3, k3
         else:
             return c4, k4
     else:
-        c3, k3 = large_and_medium(G) #medium and large algorithm
+        c3, k3 = large_and_medium(G)  # medium and large algorithm
         return c3, k3
+
+
 def randomized_helper(G, n):
     max_score = 0
     delete = (None, None)
-    for i in range(n):
-        c, k = randomized(G)
+
+    stuff = [G] * n
+    pool = multiprocessing.Pool()
+    results = pool.map(randomized, stuff)
+    for i in range(len(stuff)):
+        c = results[i][0]
+        k = results[i][1]
         score = calculate_score(G, c, k)
         if score > max_score:
             delete = (c, k)
             max_score = score
+    # for i in range(n):
+    #     c, k = randomized(G)
+    #     score = calculate_score(G, c, k)
+    #     if score > max_score:
+    #         delete = (c, k)
+    #         max_score = score
     return delete[0], delete[1]
+
 
 def randomized(G):
     V_G = len(G.nodes)
@@ -73,7 +91,6 @@ def randomized(G):
 
     c = 0
     k = 0
-    finalG = G.copy()
     H = G.copy()
     while c < c_val or k < k_val:
         choose = random()
@@ -132,11 +149,12 @@ def randomized(G):
                     H.remove_edge(edge_delete_one_iter[0], edge_delete_one_iter[1])
                     delete_edges.append((edge_delete_one_iter[0], edge_delete_one_iter[1]))
                     k += 1
-    #print(c,k)
+    # print(c,k)
     if is_valid_solution(G, delete_nodes, delete_edges):
-        return delete_nodes, delete_edges
+        return (delete_nodes, delete_edges)
     else:
-        return [], []
+        return ([], [])
+
 
 def naive1(G):
     V_G = len(G.nodes)
@@ -211,6 +229,7 @@ def naive1(G):
     else:
         return [], []
 
+
 def naive2(G):
     V_G = len(G.nodes)
     if (V_G >= 20 and V_G <= 30):
@@ -275,6 +294,7 @@ def naive2(G):
     else:
         return [], []
 
+
 def large_and_medium(G):
     """Initialize variables (start)"""
     V_G = len(G.nodes)
@@ -299,11 +319,11 @@ def large_and_medium(G):
     """Initialize variables (end)"""
 
     """Remove Vertices (start)"""
-    while(curr_c < c_val):
+    while (curr_c < c_val):
         w_to_v = {}
         w_list = []
         for v in finalG.nodes:
-            if not(v == s or v == t):
+            if not (v == s or v == t):
                 testG = finalG.copy()
                 testG.remove_node(v)
                 if (nx.has_path(testG, s, t)):
@@ -318,21 +338,21 @@ def large_and_medium(G):
     """Find Longest Path (start) REMOVED
     L = nx.Graph()
     L_path = semi_longest_path(finalG, source=s, target=t, num_sample=10000)
-    
+
     for i in range(len(L_path) - 1):
         u = L_path[i]
         v = L_path[i+1]
         w_uv = G[u][v]["weight"]
         L.add_edge(u, v, weight=w_uv, capacity=w_uv)
     """
-    if (True): #Large
-        while(curr_k < k_val):
+    if (True):  # Large
+        while (curr_k < k_val):
             S = nx.Graph()
             S_val, S_path = nx.single_source_dijkstra(finalG, s, t, weight='weight')
 
             for i in range(len(S_path) - 1):
                 u = S_path[i]
-                v = S_path[i+1]
+                v = S_path[i + 1]
                 w_uv = G[u][v]["weight"]
                 S.add_edge(u, v, weight=w_uv, capacity=w_uv)
 
@@ -349,13 +369,13 @@ def large_and_medium(G):
                         currMaxE = e
                 else:
                     falseCount += 1
-            #print(falseCount)
+            # print(falseCount)
             if (falseCount == len(S.edges)):
                 break
-            #print(curr_k)
+            # print(curr_k)
             finalG.remove_edge(*currMaxE)
             curr_k += 1
-    else: #Medium
+    else:  # Medium
         """ 
         while(curr_k < k_val):
             S = nx.Graph()
@@ -383,41 +403,35 @@ def large_and_medium(G):
             if (falseCount == len(S.edges)):
                 break
             finalG.remove_edge(*currMaxE)
-        """        
-        #print("gsd")
+        """
+        # print("gsd")
         while (curr_k < k_val):
             if (True):
-                #print("yeet1")
+                # print("yeet1")
                 toRemove = findEdge(finalG, finalG, 1, True, s, t, [])
-                #print(toRemove)
+                # print(toRemove)
                 finalG.remove_edge(*toRemove)
                 curr_k += 1
-        
 
-    #print(L_path)
-    #print(nx.single_source_dijkstra(finalG, s, t, weight='weight')[0])
-    
-    #print(nx.single_source_dijkstra(G, s, t, weight='weight'))
-    #print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
-    
+    # print(L_path)
+    # print(nx.single_source_dijkstra(finalG, s, t, weight='weight')[0])
+
+    # print(nx.single_source_dijkstra(G, s, t, weight='weight'))
+    # print(nx.single_source_dijkstra(finalG, s, t, weight='weight'))
+
     c = vertex_diff(G, finalG)
     k = edge_diff(G, finalG, c)
-    #print(c,k)
-    return c, k
-
-
-
-
+    # print(c,k)
+    return (c, k)
 
 
 def findEdge(originalG, currG, depth, saveEdge, s, t, e_list):
-
     S = nx.Graph()
     S_val, S_path = nx.single_source_dijkstra(currG, s, t, weight='weight')
 
     for i in range(len(S_path) - 1):
         u = S_path[i]
-        v = S_path[i+1]
+        v = S_path[i + 1]
         w_uv = currG[u][v]["weight"]
         S.add_edge(u, v, weight=w_uv)
 
@@ -439,9 +453,9 @@ def findEdge(originalG, currG, depth, saveEdge, s, t, e_list):
         if (nx.has_path(futureG, s, t)):
             e_list.append(e)
             score = findEdge(originalG, futureG, depth - 1, False, s, t, e_list)
-            #score += heuristic(S, futureG, e, s, t)
+            # score += heuristic(S, futureG, e, s, t)
             score = round(score, 4)
-            #print(score)
+            # print(score)
             if (score > currScore):
                 currScore = score
                 optimalEdge = e
@@ -451,20 +465,18 @@ def findEdge(originalG, currG, depth, saveEdge, s, t, e_list):
     else:
         return currScore
 
+
 def heuristic(S, futureG, e, s, t):
-    #sp_weight = nx.single_source_dijkstra(futureG, e[0], e[1], weight='weight')[0]
-    #diff = sp_weight - currG[e[0]][e[1]]['weight']
+    # sp_weight = nx.single_source_dijkstra(futureG, e[0], e[1], weight='weight')[0]
+    # diff = sp_weight - currG[e[0]][e[1]]['weight']
     sp_weight = nx.single_source_dijkstra(futureG, e[0], e[1], weight='weight')[0]
     diff = sp_weight - S[e[0]][e[1]]['weight']
     return diff
-    #return nx.single_source_dijkstra(currG, s, t, weight='weight')[0]
+    # return nx.single_source_dijkstra(currG, s, t, weight='weight')[0]
+
 
 def n_highest(currG, edges):
     pass
-
-
-
-
 
 
 def drawGraph(G, filename, detail):
@@ -475,14 +487,15 @@ def drawGraph(G, filename, detail):
     detail -> True if you want v & e numbers, False for a plain graph
     """
     if (detail == True):
-        pos=nx.spring_layout(G)
-        nx.draw_networkx(G,pos)
-        labels = nx.get_edge_attributes(G,'weight')
-        nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
+        pos = nx.spring_layout(G)
+        nx.draw_networkx(G, pos)
+        labels = nx.get_edge_attributes(G, 'weight')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
         plt.savefig("visualizations/" + filename + ".jpg")
-    else: 
-        nx.draw_shell(G, with_labels = True)
+    else:
+        nx.draw_shell(G, with_labels=True)
         plt.savefig("visualizations/" + filename + ".jpg")
+
 
 def semi_longest_path(graph, source, target, num_sample):
     """
@@ -501,11 +514,12 @@ def semi_longest_path(graph, source, target, num_sample):
             longest_path_length = path_length
             longest_path = path
         num_sample -= 1
-    #print(longest_path_length)
+    # print(longest_path_length)
     return longest_path
 
+
 def edge_diff(G1, G2, v_diff):
-    #G1 should have more edges than G2.
+    # G1 should have more edges than G2.
     e_diff = []
     for e in G1.edges:
         if not (e[0] in v_diff) and not (e[1] in v_diff):
@@ -513,8 +527,9 @@ def edge_diff(G1, G2, v_diff):
                 e_diff.append(e)
     return e_diff
 
+
 def vertex_diff(G1, G2):
-    #G1 should have more vertices than G2.
+    # G1 should have more vertices than G2.
     v_diff = []
     for v in G1.nodes:
         if not G2.has_node(v):
@@ -565,7 +580,7 @@ if __name__ == '__main__':
     #     assert is_valid_solution(G, c, k)
     #     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
     #     write_output_file(G, c, k, output_path)
-    for i in range(1, 301):
+    for i in range(4, 301):
         input_path = 'inputs/medium/medium-' + str(i) + '.in'
         output_path = 'outputs/medium/medium-' + str(i) + '.out'
         G = read_input_file(input_path)
