@@ -27,7 +27,6 @@ def solve(G):
         k: list of edges to remove
     """
     V_G = len(G.nodes)
-
     if (V_G >= 20 and V_G <= 30):
         c1, k1 = naive1(G)  # small algorithm 1
         c2, k2 = naive2(G)  # small algorithm 2
@@ -36,7 +35,7 @@ def solve(G):
         else:
             return c2, k2
     elif (V_G > 30 and V_G <= 50):
-        c3, k3 = [], []
+        c3, k3 = randomized_helper(G, 75)
         # c3, k3 = randomized_helper(G, 50)  # medium and large algorithm
         c4, k4 = large_and_medium(G)
         if calculate_score(G, c3, k3) > calculate_score(G, c4, k4):
@@ -54,11 +53,12 @@ def randomized_helper(G, n):
 
     stuff = [G] * n
     pool = multiprocessing.Pool()
-    results = pool.map(randomized, stuff)
+    results = pool.map(naive3, stuff)
     for i in range(len(stuff)):
         c = results[i][0]
         k = results[i][1]
         score = calculate_score(G, c, k)
+        print(score)
         if score > max_score:
             delete = (c, k)
             max_score = score
@@ -154,6 +154,99 @@ def randomized(G):
         return (delete_nodes, delete_edges)
     else:
         return ([], [])
+
+
+
+
+def naive3(G):
+
+    c = 0
+    k = 0
+    def remove_node():
+        least = MIN_VALUE
+        node_delete = 0
+        nothing, curr_longest_path = nx.single_source_dijkstra(H, s, t)
+        for node in curr_longest_path:
+            if node != s and node != t:
+                A = H.copy()
+                A.remove_node(node)
+                if (nx.has_path(A, s, t)):
+                    weight, pathNode = nx.single_source_dijkstra(A, s, t)
+                    if (weight > least):
+                        least = weight
+                        node_delete = node
+        if node_delete != 0:
+            delete_nodes.append(node_delete)
+            H.remove_node(node_delete)
+            # for e in list(delete_edges):
+            #     if e[0] == node_delete or e[1] == node_delete:
+            #         delete_edges.remove(e)
+            #         k -= 1
+
+    def remove_edge():
+        least = MIN_VALUE
+        edge_delete = 0
+        nothing, current = nx.single_source_dijkstra(H, s, t)
+        edges = []
+        for a in range(len(current) - 1):
+            u = current[a]
+            v = current[a + 1]
+            weight = {'weight': G[u][v]['weight']}
+            edges.append((u, v, weight))
+        for e in edges:
+            A = H.copy()
+            A.remove_edge(e[0], e[1])
+            if (nx.has_path(A, s, t)):
+                min_dist_edge, pathNode = nx.single_source_dijkstra(A, s, t)
+                if (min_dist_edge > least):
+                    least = min_dist_edge
+                    edge_delete = e
+        if edge_delete != 0:
+            if edge_delete[0] not in delete_nodes and edge_delete[1] not in delete_nodes:
+                delete_edges.append((edge_delete[0], edge_delete[1]))
+                H.remove_edge(edge_delete[0], edge_delete[1])
+    """
+    Args:
+        G: networkx.Graph
+    Returns:
+        c: list of cities to remove
+        k: list of edges to remove
+    """
+    V_G = list(G.nodes)
+    if len(V_G) >= 20 and len(V_G) <= 30:
+        c_val, k_val = 1, 15
+    elif len(V_G) > 30 and len(V_G) <= 50:
+        c_val, k_val = 3, 50
+    else:
+        c_val, k_val = 5, 100
+    delete_nodes, delete_edges = [], []
+    s = 0
+    t = len(V_G) - 1
+    H = G.copy()
+
+
+    for i in range(c_val + k_val):
+        count = random()
+        if count < 0.5:
+            if len(delete_edges) < k_val:
+                remove_edge()
+                k += 1
+            elif len(delete_nodes) < c_val:
+                remove_node()
+                c += 1
+        else:
+            if len(delete_edges) < c_val:
+                remove_node()
+                c += 1
+            elif len(delete_edges) < k_val:
+                remove_edge()
+                k += 1
+
+
+    return delete_nodes, delete_edges
+
+
+
 
 
 def naive1(G):
@@ -542,13 +635,13 @@ def vertex_diff(G1, G2):
 # Usage: python3 solver.py test.in
 
 
-# if __name__ == '__main__':
-#     assert len(sys.argv) == 2
-#     path = sys.argv[1]
-#     G = read_input_file(path)
-#     c, k = solve(G)
-#     assert is_valid_solution(G, c, k)
-#     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+if __name__ == '__main__':
+    assert len(sys.argv) == 2
+    path = sys.argv[1]
+    G = read_input_file(path)
+    c, k = solve(G)
+    assert is_valid_solution(G, c, k)
+    print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
 #     #write_output_file(G, c, k, 'outputs/small-1.out')
 
 """
@@ -569,30 +662,30 @@ if __name__ == '__main__':
             distance = calculate_score(G, c, k)
             write_output_file(G, c, k, output_path)
 """
-
-if __name__ == '__main__':
-    assert len(sys.argv) == 1
-    # for i in range(1, 301):
-    #     input_path = 'inputs/small/small-' + str(i) + '.in'
-    #     output_path = 'outputs/small/small-' + str(i) + '.out'
-    #     G = read_input_file(input_path)
-    #     c, k = solve(G)
-    #     assert is_valid_solution(G, c, k)
-    #     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-    #     write_output_file(G, c, k, output_path)
-    for i in range(4, 301):
-        input_path = 'inputs/medium/medium-' + str(i) + '.in'
-        output_path = 'outputs/medium/medium-' + str(i) + '.out'
-        G = read_input_file(input_path)
-        c, k = solve(G)
-        assert is_valid_solution(G, c, k)
-        print("Shortest Path Difference for medium-" + str(i) + ": {}".format(calculate_score(G, c, k)))
-        write_output_file(G, c, k, output_path)
-    # for i in range(1, 301):
-    #     input_path = 'inputs/large/large-' + str(i) + '.in'
-    #     output_path = 'outputs/large/large-' + str(i) + '.out'
-    #     G = read_input_file(input_path)
-    #     c, k = solve(G)
-    #     assert is_valid_solution(G, c, k)
-    #     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
-    #     write_output_file(G, c, k, output_path)
+#
+# if __name__ == '__main__':
+#     assert len(sys.argv) == 1
+#     # for i in range(1, 301):
+#     #     input_path = 'inputs/small/small-' + str(i) + '.in'
+#     #     output_path = 'outputs/small/small-' + str(i) + '.out'
+#     #     G = read_input_file(input_path)
+#     #     c, k = solve(G)
+#     #     assert is_valid_solution(G, c, k)
+#     #     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+#     #     write_output_file(G, c, k, output_path)
+#     for i in range(4, 301):
+#         input_path = 'inputs/medium/medium-' + str(i) + '.in'
+#         output_path = 'outputs/medium/medium-' + str(i) + '.out'
+#         G = read_input_file(input_path)
+#         c, k = solve(G)
+#         assert is_valid_solution(G, c, k)
+#         print("Shortest Path Difference for medium-" + str(i) + ": {}".format(calculate_score(G, c, k)))
+#         write_output_file(G, c, k, output_path)
+#     # for i in range(1, 301):
+#     #     input_path = 'inputs/large/large-' + str(i) + '.in'
+#     #     output_path = 'outputs/large/large-' + str(i) + '.out'
+#     #     G = read_input_file(input_path)
+#     #     c, k = solve(G)
+#     #     assert is_valid_solution(G, c, k)
+#     #     print("Shortest Path Difference: {}".format(calculate_score(G, c, k)))
+#     #     write_output_file(G, c, k, output_path)
